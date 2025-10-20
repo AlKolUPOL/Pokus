@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>jsPsych: IGA 2025 Dotazník</title>
+  <!-- jsPsych v7 -->
+  <script src="https://unpkg.com/jspsych@7.3.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-button-response"></script>
+  <link href="https://unpkg.com/jspsych/css/jspsych.css" rel="stylesheet" />
+  <style>
+    body { height: 100%; margin: 0; }
+    .wrap { max-width: 840px; margin: 24px auto; padding: 0 16px; }
+    .prompt { margin-bottom: 12px; font-size: 18px; line-height: 1.4; }
+    #graphbox { border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+    svg { width: 100%; height: 420px; touch-action: none; }
+    .node { cursor: grab; }
+    .node:active { cursor: grabbing; }
+    .node circle { fill: #000000; stroke: #000000; stroke-width: 2px; }
+    .edge { stroke: #111; stroke-width: 3px; }
+    .ui { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+    .note { color: #555; font-size: 14px; }
+    svg text {
+      user-select: none;
+      pointer-events: none; /* text nebude brán jako klikací objekt */
+    }
+    #answer-options {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      justify-content: center;
+    }
+    #mode-blue, #mode-yellow {
+      border: 2px solid #ccc;
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+.active-mode {
+  border: 4px solid #333 !important;
+}
+.continue-btn-fixed-container {
+       // position: sticky; /* Přichytí prvek při skrolování */
+        bottom: 0; /* Přilepí ho ke spodní části okna prohlížeče/kontejneru */
+       // margin-top: 20px;
+        padding: 10px 0;
+        background-color: white; /* Klíčové: zajistí, že překryje obsah pod ním */
+        border-top: 1px solid #ccc;
+        z-index: 100;
+	width: 100%; 
+        box-sizing: border-box; 
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="jspsych-target" class="wrap"></div>
+
+<script>
+
+    // ---------- jsPsych init ----------
+    const jsPsych = initJsPsych({
+      display_element: 'jspsych-target',
+    //  on_finish: () => jsPsych.data.displayData('json')
+    });
+
+
+function initializeStrategyButtons(answers, checkCompletion) {
+    // ... Zde vložíte celý kód, který jsem navrhl v předchozí odpovědi ...
+    const strategyButtons = document.querySelectorAll('.strategy-btn');
+    const strategyQuestionContainer = document.querySelector('.strategy-scale');
+    // ... (zbytek logiky pro klikání, třídu 'selected', a textarea 'Jiný důvod') ...
+    
+    let selectedStrategyValue = null;
+    const otherTextarea = document.getElementById('text-other');
+    
+    strategyQuestionContainer.dataset.answer = '';
+
+    if (otherTextarea) {
+        otherTextarea.style.display = 'none';
+        otherTextarea.value = '';
+    }
+
+    strategyButtons.forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault(); 
+            
+            strategyButtons.forEach(btn => {
+                btn.classList.remove('selected');
+                btn.style.background = '';
+                btn.style.borderColor = '#ccc';
+            });
+
+            button.classList.add('selected');
+            button.style.background = '#b3e0ff'; 
+            button.style.borderColor = '#007bff'; 
+
+            selectedStrategyValue = button.dataset.value;
+            strategyQuestionContainer.dataset.answer = selectedStrategyValue;
+            answers.strategy = selectedStrategyValue; // Uloží odpověď
+            checkCompletion();
+
+            if (otherTextarea) {
+                if (selectedStrategyValue === 'jiny duvod') {
+                    otherTextarea.style.display = 'block';
+                } else {
+                    otherTextarea.style.display = 'none';
+                    otherTextarea.value = '';
+                }
+            }
+        });
+    });
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Vylepšená a centrální funkce pro přidání a obsluhu Likertovy sekce
+function addLikertSection(containerId, continueButtonId, onComplete) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Do hlavního kontejneru úlohy vložíme sekci s dotazníkem
+  const section = document.createElement('div');
+  section.innerHTML = `
+    <div id="likert-section" style="margin-top:30px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background-color: #f9f9f9;">
+      <p><strong>Prosím, odpověz na následující otázky:</strong></p>
+
+      <div class="likert-question" style="margin-bottom: 20px;">
+        <p>1. Myslím, že mé řešení úlohy je správné.</p>
+        <div class="likert-scale" data-question="confidence" style="display:flex; justify-content:space-around; flex-wrap:wrap; gap: 5px;"></div>
+      </div>
+
+      <div class="likert-question" style="margin-bottom: 20px;">
+        <p>2. V minulosti už jsem podobnou úlohu řešil/a.</p>
+        <div class="likert-scale" data-question="familiarity" style="display:flex; justify-content:space-around; flex-wrap:wrap; gap: 5px;"></div>
+      </div>
+
+<style>
+    /* CSS styl pro zvýraznění vybrané možnosti */
+    .strategy-btn {
+        padding: 10px;
+        font-size: 16px;
+        border: 2px solid #ccc;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: left;
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+    /* Styl pro vybrané tlačítko */
+    .strategy-btn.selected {
+        background-color: #b3e0ff; /* Světle modrá barva pro vybranou možnost */
+        border-color: #007bff;
+    }
+</style>
+
+<div class="likert-question">
+    <p>3. Proč jsem měnil/a svůj postup během řešení úlohy?</p>
+    
+   <div class="strategy-scale" data-question="strategy" style="display:flex; flex-direction: column; gap: 8px; max-width: 500px; margin: 0 auto;">
+
+            <button class="strategy-btn" data-value="nezmenena" style="padding: 10px; font-size: 16px; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left;">
+            Neměnil/a jsem postup.
+        </button>
+        <button class="strategy-btn" data-value="neefektivni" style="padding: 10px; font-size: 16px; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left;">
+            Můj původní postup se ukázal jako neefektivní.
+        </button>
+        <button class="strategy-btn" data-value="proti zadani" style="padding: 10px; font-size: 16px; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left;">
+            Můj původní postup neodpovídal zadání.
+        </button>
+        <button class="strategy-btn" data-value="efektivnejsi" style="padding: 10px; font-size: 16px; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left;">
+            Objevil/a jsem efektivnější postup.
+        </button>
+        <button class="strategy-btn" data-value="slepe misto" style="padding: 10px; font-size: 16px; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left;">
+            Nevěděl/a jsem, jak pokračovat s původním postupem, tak jsem zkusil/a jiný.
+        </button>
+        <button class="strategy-btn" data-value="jiny duvod" style="padding: 10px; font-size: 16px; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left;">
+            Jiný důvod:
+        </button>
+        <textarea id="text-other" placeholder="Prosím popište" style="width: 80%; display: block; margin-left: 25px;"></textarea>
+    </div>
+</div>
+
+    <div id="${continueButtonId}" class="continue-btn-fixed-container" style="display:none; text-align:center;">    
+      <button class="jspsych-btn">Uložit a pokračovat</button>
+    </div>
+  `;
+  container.appendChild(section);
+
+  const labels = [
+    "Zcela souhlasím",
+    "Souhlasím",
+    "Částečně souhlasím",
+    "Částečně nesouhlasím",
+    "Nesouhlasím",
+    "Zcela nesouhlasím"
+  ];
+
+  // Vykreslení škál s popisky
+  section.querySelectorAll('.likert-scale').forEach(scaleDiv => {
+    const qKey = scaleDiv.dataset.question;
+    
+    labels.forEach((label, i) => {
+      const btn = document.createElement('button');
+      btn.textContent = `${label}`; // Pouze slovní popis
+      btn.classList.add('likert-btn');
+      btn.style.margin = '4px';
+      btn.style.padding = '8px 10px';
+      btn.style.fontSize = '14px';
+      btn.style.flex = '1 1 15%'; // Pro vodorovné uspořádání
+      btn.dataset.value = i+1;
+      btn.dataset.question = qKey;
+      scaleDiv.appendChild(btn);
+    });
+  });
+
+  const answers = { confidence: null, familiarity: null, strategy: null };
+  // Najdeme kontejner pro tlačítko, abychom ho mohli použít pro scroll
+  const continueBtnContainer = document.getElementById(continueButtonId);
+
+  section.querySelectorAll('.likert-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // zruš zvýraznění u ostatních v téže otázce
+      section.querySelectorAll(`.likert-btn[data-question="${btn.dataset.question}"]`)
+        .forEach(b => b.style.background = '');
+      btn.style.background = 'lightblue';
+      answers[btn.dataset.question] = parseInt(btn.dataset.value);
+      
+      checkCompletion(); // Zavoláme novou funkci pro kontrolu
+    });
+  });
+  
+  function checkCompletion() {
+      if (Object.values(answers).every(v => v !== null)) {
+          continueBtnContainer.style.display = 'block';
+          continueBtnContainer.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'end'
+          });
+      } else {
+          // Toto zajistí, že pokud uživatel odpověď "odklikne", tlačítko zmizí
+          continueBtnContainer.style.display = 'none'; 
+      }
+   }
+  
+  // Zpracování kliknutí na tlačítko "Uložit a pokračovat"
+  const continueBtnEl = document.querySelector(`#${continueButtonId} .jspsych-btn`);
+  if(continueBtnEl) {
+      continueBtnEl.addEventListener('click', () => {
+          if (Object.values(answers).every(v => v !== null)) {
+              if (typeof onComplete === 'function') onComplete(answers);
+          // Najdeme hlavní kontejner a vymažeme jeho vnitřní HTML
+              const taskContainer = document.getElementById(containerId);
+              if (taskContainer) {
+                 taskContainer.innerHTML = ''; 
+              }
+          window.scrollTo(0, 0);    
+          }
+      });
+  }
+  initializeStrategyButtons(answers, checkCompletion);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// ---------- Titulní strana ----------
+const intro = {
+    type: jsPsychHtmlButtonResponse,
+    choices: [], // Odebráno standardní tlačítko
+    stimulus: () => {
+        return `
+            <div id="intro-title-container" class="prompt">
+                <h1>IGA 2025 Dotazník</h1>
+                <p>Děkujeme Vám za účast ve výzkumu.</p>
+                <div class="jspsych-btn-container" style="text-align: center; margin-top: 20px;">
+                    <button id="continue-btn-intro" class="jspsych-btn">Pokračovat</button>
+                </div>
+            </div>
+        `;
+    },
+    on_load: () => {
+        const container = document.getElementById('intro-title-container');
+        const continueBtn = document.getElementById('continue-btn-intro');
+
+        continueBtn.addEventListener('click', () => {
+            if (container) {
+                 container.innerHTML = ''; 
+            }
+            window.scrollTo(0, 0); 
+            jsPsych.finishTrial();
+        });
+    }
+};
+
+// ---------- Souhlas s účastí ve výzkumu (Informed Consent) ----------
+const informed_consent = {
+    type: jsPsychHtmlButtonResponse,
+    
+    // 1. DŮLEŽITÉ: Odebereme standardní tlačítka, aby se nezobrazilo to z jsPsych
+    choices: [], 
+    
+    stimulus: () => {
+        // 2. Do HTML přidáme id kontejneru a vlastní tlačítko
+        return `
+            <div id="informed-consent-container" class="prompt">
+                <h2>IGA 2025 Dotazník</h2>
+                <p>Děkujeme Vám za účast ve výzkumu. Přečtěte si prosím pozorně následující informace o výzkumu:</p>
+                
+                    Vaše účast ve výzkumu je zcela dobrovolná.
+                    Data budou anonymizována a použita výhradně pro vědecké účely.
+                    
+                    Svou účast můžete kdykoliv bez udání důvodu ukončit.
+              
+                <p><strong>Stisknutím tlačítka „Souhlasím a pokračovat“ potvrzujete, že jste si tyto informace přečetli/a a souhlasíte s účastí.</strong></p>
+                
+                <div class="jspsych-btn-container" style="text-align: center; margin-top: 20px;">
+                    <button id="continue-btn-consent" class="jspsych-btn">Souhlasím a pokračovat</button>
+                </div>
+            </div>
+        `;
+    },
+    
+    data: { task_name: 'informed_consent', consent: true },
+
+    // 3. V on_load přidáme obsluhu vlastního tlačítka
+    on_load: () => {
+        const container = document.getElementById('informed-consent-container');
+        const continueBtn = document.getElementById('continue-btn-consent');
+
+        continueBtn.addEventListener('click', () => {
+            // Data už jsou v bloku 'data', ale můžeme zde přidat další, pokud je potřeba.
+            // Zde se jen přesuneme dál:
+
+            // KROK A: VYČISTÍME KONTEJNER
+            if (container) {
+                 container.innerHTML = ''; 
+            }
+
+            // KROK B: Vynutíme scroll (pro plynulost)
+            window.scrollTo(0, 0); 
+            
+            // KROK C: Dokončíme trial a přejdeme na demografii
+            jsPsych.finishTrial();
+        });
+    }
+};
+
+
+// ---------- Demografické otázky: Obor studia ----------
+const demography_study_field = {
+    type: jsPsychHtmlButtonResponse,
+    choices: [], // Výchozí tlačítko bude skryté
+    stimulus: () => {
+        return `
+            <div id="study-field-container">
+                <div class="prompt">
+                    <h2>Demografické údaje</h2>
+                    <p>Jaký je Váš <strong>hlavní obor</strong> studia?</p>
+                </div>
+                <div style="text-align: left; margin: 20px auto; max-width: 400px;">
+                    <label style="display: block; margin-bottom: 10px;">
+                        <input type="radio" name="study_field" value="U1ST" style="margin-right: 8px;">
+                        Učitelství pro 1. stupeň
+                    </label>
+                    <label style="display: block; margin-bottom: 10px;">
+                        <input type="radio" name="study_field" value="U1SPN" style="margin-right: 8px;">
+                        Učitelství pro 1. stupeň se speciální pedagogikou
+                    </label>
+                    <label style="display: block; margin-bottom: 10px;">
+                        <input type="radio" name="study_field" value="UMAT" style="margin-right: 8px;">
+                        Učitelství pro 2. stupeň
+                    </label>
+                    <label style="display: block; margin-bottom: 10px;">
+                        <input type="radio" name="study_field" value="Jiny" style="margin-right: 8px;">
+                        Jiný obor
+                    </label>
+                </div>
+                <div class="jspsych-btn-container" style="text-align: center; margin-top: 20px;">
+                <button id="continue-btn-demography" class="jspsych-btn" disabled>Pokračovat</button>    
+                </div>
+            </div>
+        `;
+    },
+    on_load: () => {
+        const container = document.getElementById('study-field-container');
+        const continueBtn = document.getElementById('continue-btn-demography');
+        let selectedValue = null;
+
+        container.querySelectorAll('input[name="study_field"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                selectedValue = e.target.value;
+                continueBtn.disabled = false;
+            });
+        });
+
+        continueBtn.addEventListener('click', () => {
+            if (selectedValue !== null) {
+                // Uložení dat
+                jsPsych.data.addDataToLastTrial({
+                    study_field: selectedValue,
+                    task_name: 'demography'
+                });
+
+                // Vyčištění a přechod (pro zachování principu "čisté" stránky)
+                container.innerHTML = '';
+                window.scrollTo(0, 0);
+                jsPsych.finishTrial();
+            }
+        });
+    }
+};
+
+// ---------- Demografické otázky: Ročník studia (dynamické možnosti) ----------
+const demography_study_year = {
+    type: jsPsychHtmlButtonResponse,
+    // POZOR: Ponecháme prázdné choices, protože tlačítko generujeme ručně v on_load
+    choices: [], 
+    stimulus: () => {
+        return `
+            <div id="study-year-container">
+                <div class="prompt">
+                    <h2>Demografické údaje</h2>
+                    <p>Jaký je <strong>ročník</strong> Vašeho studia?</p>
+                </div>
+                <div id="study-year-options" style="text-align: left; margin: 20px auto; max-width: 400px;">
+                    <p>Možnosti se načítají...</p>
+                </div>
+                <div class="jspsych-btn-container" style="text-align: center; margin-top: 20px;">
+                    <button id="continue-btn-year" class="jspsych-btn" disabled>Pokračovat</button>  
+                </div>
+            </div>
+        `;
+    },
+    on_load: () => {
+        const containerYear = document.getElementById('study-year-container');
+        // OPRAVA CHYBY: Přejmenování proměnné na 'continueBtnYear'
+        const continueBtnYear = document.getElementById('continue-btn-year');
+        
+        // 1. Získání dat z předchozího trialu (Obor studia)
+        const allData = jsPsych.data.get().values();
+        // Spolehlivě najdeme data z trialu s task_name: 'demography'
+        const previousTrialData = allData.findLast(d => d.task_name === 'demography');
+        
+        // Získáme vybraný obor (předpokládá se, že je uložen pod 'study_field')
+        const studyField = previousTrialData ? previousTrialData.study_field : null; 
+
+        // 2. Definování možností odpovědí podle větve (UMAT vs. Ostatní)
+        let optionsHtml = '';
+        let choices = [];
+
+        if (studyField === 'UMAT') {
+            // Větev Učitelství pro 2. stupeň (Bc. a Mgr.)
+            choices = [
+                { value: "1BC", label: "1. ročník v Bc." },
+                { value: "2BC", label: "2. ročník Bc." },
+                { value: "3BC", label: "3. ročník v Bc." },
+                { value: "1MG", label: "1. ročník v Mgr." },
+                { value: "2MG", label: "2. ročník v Mgr." }
+            ];
+        } else {
+            // Ostatní obory (U1ST, U1SPN, Jiny, nebo pokud se nezískal studyField)
+            choices = [
+                { value: "1", label: "1. ročník" },
+                { value: "2", label: "2. ročník" },
+                { value: "3", label: "3. ročník" },
+                { value: "4", label: "4. ročník" },
+                { value: "5", label: "5. ročník" }
+            ];
+        }
+
+        // 3. Vygenerování HTML pro radio buttony
+        choices.forEach(option => {
+            optionsHtml += `
+                <label style="display: block; margin-bottom: 10px;">
+                    <input type="radio" name="study_year" value="${option.value}" style="margin-right: 8px;">
+                    ${option.label}
+                </label>
+            `;
+        });
+        
+        // 4. Vložení HTML a obsluha volby
+        const optionsContainer = document.getElementById('study-year-options');
+        optionsContainer.innerHTML = optionsHtml;
+        
+        let selectedValue = null;
+        
+        optionsContainer.querySelectorAll('input[name="study_year"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                selectedValue = e.target.value;
+                continueBtnYear.disabled = false; // Aktivujeme tlačítko
+            });
+        });
+
+        // 5. Obsluha tlačítka "Pokračovat"
+        continueBtnYear.addEventListener('click', () => {
+            if (selectedValue !== null) {
+                // Uložíme data o ročníku
+                jsPsych.data.addDataToLastTrial({
+                    study_year: selectedValue,
+                    task_name: 'demography_year'
+                });
+                // Dokončíme trial
+                containerYear.innerHTML = '';
+                window.scrollTo(0, 0);
+                jsPsych.finishTrial();
+            }
+        });
+    }
+};
+
+// ---------- Demografické otázky: Forma studia ----------
+const demography_study_form = {
+    type: jsPsychHtmlButtonResponse,
+    choices: [],
+    stimulus: () => {
+        return `
+            <div id="study-form-container">
+                <div class="prompt">
+                    <h2>Demografické údaje</h2>
+                    <p>Jaká je <strong>forma</strong> Vašeho studia?</p>
+                </div>
+                <div style="text-align: left; margin: 20px auto; max-width: 400px;">
+                    <label style="display: block; margin-bottom: 10px;">
+                        <input type="radio" name="study_form" value="prezencni" style="margin-right: 8px;">
+                        Prezenční
+                    </label>
+                    <label style="display: block; margin-bottom: 10px;">
+                        <input type="radio" name="study_form" value="kombinovana" style="margin-right: 8px;">
+                        Kombinovaná
+                    </label>
+                </div>
+                <div class="jspsych-btn-container" style="text-align: center; margin-top: 20px;">
+                <button id="continue-btn-form" class="jspsych-btn" disabled>Pokračovat</button>  
+                </div>
+            </div>
+        `;
+    },
+    on_load: () => {
+        const container = document.getElementById('study-form-container');
+        const continueBtn = document.getElementById('continue-btn-form');
+        let selectedValue = null;
+
+        container.querySelectorAll('input[name="study_form"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                selectedValue = e.target.value;
+                continueBtn.disabled = false; // Aktivujeme tlačítko
+            });
+        });
+
+        continueBtn.addEventListener('click', () => {
+            if (selectedValue !== null) {
+                jsPsych.data.addDataToLastTrial({
+                    study_form: selectedValue,
+                    task_name: 'demography_form'
+                });
+                container.innerHTML = '';
+                window.scrollTo(0, 0);
+                jsPsych.finishTrial();
+            }
+        });
+    }
+};
+
+////////////////////////////////////////////////////////// 1. úloha
+
+   // ---------- Graf s přetahováním vrcholů ----------
+    const initialVertices = [
+      { id: 0, x: 120, y: 40 }, 
+      { id: 1, x: 360, y: 40 }, 
+      { id: 2, x: 120, y: 320 },
+      { id: 3, x: 360, y: 320 },
+      { id: 4, x: 208, y: 90 }, 
+      { id: 5, x: 280, y: 110 }, 
+      { id: 6, x: 200, y: 264 },
+      { id: 7, x: 265, y: 230 }  
+    ];
+
+    // Hrany: [u, v]
+    const edges = [
+      [0,1], [0,2], [0,7],
+      [1,4], [1,6], [1,7], [1,3],
+      [2,4], [2,5],
+      [3,6], [3,4], [3,5],
+      [5,7]
+    ];
+
+    const houseTask = {
+      type: jsPsychHtmlButtonResponse,
+      choices: [], // Změna: Odebráno defaultní tlačítko
+      stimulus: () => {
+        // Zabaleno do nového kontejneru pro dotazník
+        return `
+          <div id="house-task-container">
+            <div id="graphbox">
+              <div class="prompt">
+    		<p><strong>1. Úloha</strong></p> 
+                <p><strong>Zadání:</strong> Přesuň body tak, aby se čáry nekřížily.</p>
+              </div>
+              <svg id="graph" viewBox="0 0 480 360" preserveAspectRatio="xMidYMid meet" aria-label="Domeček – graf">
+                ${edges.map(([u,v], i) => `<line class="edge" data-u="${u}" data-v="${v}" id="edge-${i}" x1="0" y1="0" x2="0" y2="0"></line>`).join('')}
+                ${initialVertices.map(v => `
+                  <g class="node" data-id="${v.id}" id="node-${v.id}">
+                    <circle r="9" cx="${v.x}" cy="${v.y}"></circle>
+                  </g>
+                `).join('')}
+              </svg>
+              <div class="ui">
+                <button type="button" id="reset-btn">Resetovat polohu</button>
+                <span class="note">Táhněte puntík za stisknuté tlačítko myši (nebo prstem na mobilu).</span>
+              </div>
+            </div>
+          </div>
+        `;
+      },
+      on_load: () => {
+        const svg = document.getElementById('graph');
+        const nodes = Array.from(svg.querySelectorAll('.node'));
+        const lineEls = Array.from(svg.querySelectorAll('.edge'));
+
+        let vertices = initialVertices.map(v => ({...v}));
+        const startPositions = initialVertices.map(v => ({...v}));
+
+        function updateEdges() {
+          for (const line of lineEls) {
+            const u = +line.getAttribute('data-u');
+            const v = +line.getAttribute('data-v');
+            const a = vertices[u];
+            const b = vertices[v];
+            line.setAttribute('x1', a.x);
+            line.setAttribute('y1', a.y);
+            line.setAttribute('x2', b.x);
+            line.setAttribute('y2', b.y);
+          }
+        }
+
+        function updateNodePosition(el, x, y) {
+          const minX = 10, minY = 10, maxX = 470, maxY = 350;
+          const nx = Math.max(minX, Math.min(maxX, x));
+          const ny = Math.max(minY, Math.min(maxY, y));
+          const id = +el.getAttribute('data-id');
+          vertices[id].x = nx;
+          vertices[id].y = ny;
+          const circle = el.querySelector('circle');
+          circle.setAttribute('cx', nx);
+          circle.setAttribute('cy', ny);
+        }
+
+        function clientToSvgPoint(svgEl, clientX, clientY) {
+          const pt = svgEl.createSVGPoint();
+          pt.x = clientX; pt.y = clientY;
+          const matrix = svgEl.getScreenCTM().inverse();
+          return pt.matrixTransform(matrix);
+        }
+
+        let dragging = null;
+
+        function pointerDown(e) {
+          e.preventDefault();
+          const target = e.currentTarget; 
+          dragging = target;
+          target.classList.add('dragging');
+          target.setPointerCapture?.(e.pointerId);
+        }
+        function pointerMove(e) {
+          if (!dragging) return;
+          const p = clientToSvgPoint(svg, e.clientX, e.clientY);
+          updateNodePosition(dragging, p.x, p.y);
+          updateEdges();
+        }
+        function pointerUp(e) {
+          if (!dragging) return;
+          dragging.classList.remove('dragging');
+          dragging.releasePointerCapture?.(e.pointerId);
+          dragging = null;
+        }
+
+        nodes.forEach(n => {
+          n.addEventListener('pointerdown', pointerDown);
+        });
+        svg.addEventListener('pointermove', pointerMove);
+        window.addEventListener('pointerup', pointerUp);
+
+        function applyPositions(pos) {
+          vertices = pos.map(v => ({...v}));
+          vertices.forEach(v => {
+            const g = document.getElementById('node-' + v.id);
+            const c = g.querySelector('circle');
+            c.setAttribute('cx', v.x);
+            c.setAttribute('cy', v.y);
+          });
+          updateEdges();
+        }
+        applyPositions(vertices);
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+          applyPositions(startPositions);
+        });
+
+        // --- PŘIDÁNÍ LIKERTOVY SEKCE A LOGIKY ULOŽENÍ DAT ---
+        addLikertSection('house-task-container', 'continue-btn-house', (likertAnswers) => {
+            jsPsych.data.addDataToLastTrial({
+                vertices: vertices.map(v => ({ id: v.id, x: Math.round(v.x), y: Math.round(v.y) })),
+                edges: edges,
+                ...likertAnswers 
+            });
+            jsPsych.finishTrial();
+        });
+      },
+    };
+
+//////////////////////////////////////////////////////////////////// 2. úloha
+const connectTask = {
+  type: jsPsychHtmlButtonResponse,
+  choices: [], // Změna: Odebráno defaultní tlačítko
+  stimulus: () => {
+    return `
+      <div id="connect-task-container">
+        <div id="graphbox">
+          <div class="prompt">
+            <p><strong>2. úloha:</strong> Spojte kolečka čarami tak, aby počet čar, které jsou s kolečkem spojeny odpovídal číslu, které je uvnitř napsané. Klikněte na dva body, aby se vytvořila nebo smazala čára.</p>
+          </div>
+          <svg id="connect-graph" viewBox="0 0 480 360" preserveAspectRatio="xMidYMid meet" aria-label="Spojování vrcholů">
+          </svg>
+    	<div class="ui">
+            <button type="button" id="reset-btn">Resetovat úlohu</button>
+            <span class="note">Klikněte na dva body pro spojení/odpojení.</span>
+  	</div>
+        </div>
+      </div>
+    `;
+  },
+  on_load: () => {
+    const svg = document.getElementById('connect-graph');
+    const svgNS = "http://www.w3.org/2000/svg";
+
+    const nodes = [
+      {id: 1, label: "2", x: 120, y: 60},
+      {id: 2, label: "4", x: 240, y: 60},
+      {id: 3, label: "3", x: 360, y: 60},
+      {id: 4, label: "3", x: 120, y: 180},
+      {id: 5, label: "3", x: 240, y: 180},
+      {id: 6, label: "1", x: 360, y: 180},
+      {id: 7, label: "1", x: 120, y: 300},
+      {id: 8, label: "1", x: 240, y: 300}
+    ];
+
+    let edges = [];
+    let selectedNode = null;
+
+    function drawGraph() {
+      svg.innerHTML = '';
+
+      // Hrany
+      edges.forEach(edge => {
+        const n1 = nodes.find(n => n.id === edge.from);
+        const n2 = nodes.find(n => n.id === edge.to);
+        const line = document.createElementNS(svgNS, "line");
+        line.setAttribute("x1", n1.x);
+        line.setAttribute("y1", n1.y);
+        line.setAttribute("x2", n2.x);
+        line.setAttribute("y2", n2.y);
+        line.setAttribute("stroke", "black");
+        line.setAttribute("stroke-width", "2");
+        svg.appendChild(line);
+      });
+
+      // Vrcholy
+      nodes.forEach(node => {
+        const circle = document.createElementNS(svgNS, "circle");
+        circle.setAttribute("cx", node.x);
+        circle.setAttribute("cy", node.y);
+        circle.setAttribute("r", 18);
+        circle.setAttribute("fill", selectedNode === node.id ? "lightblue" : "white");
+        circle.setAttribute("stroke", "black");
+        circle.setAttribute("stroke-width", "2");
+        circle.style.cursor = "pointer";
+
+        circle.addEventListener("click", () => {
+          if (selectedNode === null) {
+            selectedNode = node.id;
+          } else {
+            if (selectedNode !== node.id) {
+              const existingIndex = edges.findIndex(e =>
+                (e.from === selectedNode && e.to === node.id) ||
+                (e.from === node.id && e.to === selectedNode)
+              );
+              if (existingIndex >= 0) {
+                edges.splice(existingIndex, 1); // smaž hranu
+              } else {
+                edges.push({from: selectedNode, to: node.id}); // přidej hranu
+              }
+            }
+            selectedNode = null;
+          }
+          drawGraph();
+        });
+
+        const text = document.createElementNS(svgNS, "text");
+        text.setAttribute("x", node.x);
+        text.setAttribute("y", node.y + 5);
+        text.setAttribute("font-size", "16");
+        text.setAttribute("text-anchor", "middle");
+        text.textContent = node.label;
+
+        svg.appendChild(circle);
+        svg.appendChild(text);
+      });
+    }
+
+    drawGraph();
+
+    // --- PŘIDÁNÍ LIKERTOVY SEKCE A LOGIKY ULOŽENÍ DAT ---
+    addLikertSection('connect-task-container', 'continue-btn-connect', (likertAnswers) => {
+        jsPsych.data.addDataToLastTrial({
+            created_edges: edges,
+            ...likertAnswers
+        });
+        jsPsych.finishTrial();
+    });
+  }
+};
+
+///////////////////////////////////////////////////////////////// 3. úloha
+const coloringTask = {
+  type: jsPsychHtmlButtonResponse,
+  choices: [], // Správně: Odstranění defaultního tlačítka
+  stimulus: () => {
+    return `
+      <div id="coloring-task-container"> <div class="prompt">
+          <p><strong>3. úloha:</strong> Vybarvěte kolečka tak, aby každá dvě, která jsou spojená, měla rozdílnou barvu.</p>
+        </div>
+        <div style="display:flex; gap:20px;">
+          <svg id="color-graph" viewBox="0 0 500 360" preserveAspectRatio="xMidYMid meet" style="flex:2; border:1px solid #ccc;"></svg>
+    
+          <div id="color-panel" style="flex:1; display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center;"></div>
+        </div>
+        <div style="margin-top:10px;">
+          <button type="button" id="reset-coloring">Resetovat barvy</button>
+        </div>
+        
+        <div class="question" style="margin-top:20px;">
+          <p>Kolik barev nejméně je potřeba použít pro vybarvení obrázku tak, aby dvě spojená kolečka měla vždy jinou barvu?</p>
+          <div id="answer-options" style="display:flex; gap:10px; margin-top:10px;"></div>
+        </div>
+        
+        </div>
+    `;
+  },
+  on_load: () => {
+    const svg = document.getElementById('color-graph');
+    const svgNS = "http://www.w3.org/2000/svg";
+
+    const initialVertices = [
+      { id: 0, x: 240, y: 40 }, 
+      { id: 1, x: 180, y: 160 }, 
+      { id: 2, x: 300, y: 160 },
+      { id: 3, x: 270, y: 230 },
+      { id: 4, x: 125, y: 300 }, 
+      { id: 5, x: 240, y: 300 }, 
+      { id: 6, x: 355, y: 300 } 
+    ];
+
+    const edges = [
+      [0,1], [0,2],
+      [1,2], [1,3], [1,4], [1,5],
+      [2,3], [2,6],
+      [3,5],
+      [4,5],
+      [5,6]
+    ];
+
+    const colors = ['#FF4C4C', '#4CAF50', '#4C8CFF', '#FFA500', '#AA33CC'];
+    let selectedColor = null;
+    const vertexColors = {}; // {id: color}
+
+    // Vykreslení hran
+    edges.forEach(([u,v]) => {
+      const n1 = initialVertices[u];
+      const n2 = initialVertices[v];
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', n1.x);
+      line.setAttribute('y1', n1.y);
+      line.setAttribute('x2', n2.x);
+      line.setAttribute('y2', n2.y);
+      line.setAttribute('stroke', 'black');
+      line.setAttribute('stroke-width', '2');
+      svg.appendChild(line);
+    });
+
+    // Vykreslení vrcholů
+    initialVertices.forEach(node => {
+      const circle = document.createElementNS(svgNS, 'circle');
+      circle.setAttribute('cx', node.x);
+      circle.setAttribute('cy', node.y);
+      circle.setAttribute('r', 18);
+      circle.setAttribute('fill', 'white');
+      circle.setAttribute('stroke', 'black');
+      circle.setAttribute('stroke-width', '2');
+      circle.style.cursor = 'pointer';
+
+      circle.addEventListener('click', () => {
+        if (selectedColor) {
+          vertexColors[node.id] = selectedColor;
+          circle.setAttribute('fill', selectedColor);
+        }
+      });
+
+      svg.appendChild(circle);
+    });
+
+    // Panel barev
+    const colorPanel = document.getElementById('color-panel');
+    colors.forEach(color => {
+      const colorCircle = document.createElement('div');
+      colorCircle.style.width = '36px';
+      colorCircle.style.height = '36px';
+      colorCircle.style.borderRadius = '50%';
+      colorCircle.style.backgroundColor = color;
+      colorCircle.style.border = '2px solid black';
+      colorCircle.style.cursor = 'pointer';
+
+      colorCircle.addEventListener('click', () => {
+        selectedColor = color;
+        // Zvýraznění vybraného
+        Array.from(colorPanel.children).forEach(c => {
+          c.style.border = '2px solid black';
+        });
+        colorCircle.style.border = '4px solid #333';
+      });
+
+      colorPanel.appendChild(colorCircle);
+    });
+    
+    // Reset barvy
+    document.getElementById('reset-coloring').addEventListener('click', () => {
+        initialVertices.forEach(node => {
+            document.querySelector(`circle[cx="${node.x}"][cy="${node.y}"]`).setAttribute('fill', 'white');
+            delete vertexColors[node.id];
+        });
+    });
+
+    // Odpovědi 1-5 pro počet barev
+    const answers = [1,2,3,4,5];
+    const answerContainer = document.getElementById('answer-options');
+    let chosenAnswer = null; // Tato proměnná bude uložena s daty
+
+    answers.forEach(ans => {
+      const btn = document.createElement('button');
+      btn.className = 'jspsych-btn';
+      btn.textContent = ans;
+      btn.addEventListener('click', () => {
+        chosenAnswer = ans;
+        // Reset všech tlačítek na původní barvu
+        Array.from(answerContainer.children).forEach(b => {
+           b.style.backgroundColor = '';
+        });
+        // Vybarvit vybrané tlačítko světle modře
+        btn.style.backgroundColor = 'lightblue';
+        // DŮLEŽITÉ: Odebráno: document.getElementById('continue-btn').style.display = 'block';
+        // Tlačítko pro pokračování se objeví až po zodpovězení Likertových otázek!
+      });
+      answerContainer.appendChild(btn);
+    });
+
+    // DŮLEŽITÉ: Odebrán původní kód pro uložení dat (document.querySelector('#continue-btn .jspsych-btn').addEventListener('click', ...)
+    // Nyní to řeší funkce addLikertSection!
+
+    // =====================================================================
+    // <<< PŘIDÁNÍ LIKERTOVY SEKCE A LOGIKY ULOŽENÍ DAT >>>
+    // =====================================================================
+    addLikertSection('coloring-task-container', 'continue-btn-coloring', (likertAnswers) => {
+        // Uložíme data úkolu (barvy vrcholů, zvolená odpověď) + data z dotazníku
+        jsPsych.data.addDataToLastTrial({
+            vertex_colors: vertexColors,
+            chosen_answer: chosenAnswer, // Uloží null, pokud nebylo vybráno!
+            ...likertAnswers // Zde se automaticky přidají 3 Likertovy odpovědi
+        });
+        jsPsych.finishTrial(); // Tímto se přejde na další úkol
+    });
+  }
+};
+
+
+/////////////////////////////////////////////////////////////////////////// 4. úloha
+const eulerTask = {
+  type: jsPsychHtmlButtonResponse,
+  choices: [], // Změna: Odebráno defaultní tlačítko, aby ho mohla řídit funkce addLikertSection
+  stimulus: () => {
+    return `
+      <div id="euler-task-container"> <div class="prompt">
+          <p><strong>4. úloha:</strong> Přidejte 1 čáru tak, aby bylo možné obrázek nakreslit jedním tahem.</p>
+        </div>
+        <div style="margin-bottom:10px; display:flex; gap:10px; justify-content:center;">
+          <button type="button" id="mode-blue" style="background:#4C8CFF; color:white;">Vytvořit nové čáry</button>
+          <button type="button" id="mode-yellow" style="background:#FFD700; color:black;">Nakreslit jedním tahem</button>
+        </div>
+        <svg id="euler-graph" viewBox="0 0 480 360" preserveAspectRatio="xMidYMid meet" style="border:1px solid #ccc;"></svg>
+      </div>
+    `;
+  },
+  on_load: () => {
+    const svg = document.getElementById('euler-graph');
+    const svgNS = "http://www.w3.org/2000/svg";
+
+    const initialVertices = [
+      { id: 0, x: 140, y: 55 }, 
+      { id: 1, x: 340, y: 55 }, 
+      { id: 2, x: 140, y: 305 },
+      { id: 3, x: 340, y: 305 },
+      { id: 4, x: 190, y: 140 }, 
+      { id: 5, x: 270, y: 160 }, 
+      { id: 6, x: 400, y: 170 },
+      { id: 7, x: 280, y: 250 }
+    ];
+
+    const baseEdges = [
+      [0,1], [0,2], [0,5],
+      [1,3], [1,4], [1,5], [1,6],
+      [2,3],
+      [4,7]
+    ];
+
+    let blueEdges = []; // přidané modré hrany
+    let yellowEdges = []; // žluté hrany
+    let yellowEdgesOrder = []; // pořadí pro jednosměrný tah
+    let selectedNode = null; // pro modrý režim
+    let lastYellowNode = null; // pro žlutý režim
+    let mode = null;
+
+    // Vykreslit základní černé hrany
+    baseEdges.forEach(([u,v]) => {
+      const n1 = initialVertices[u];
+      const n2 = initialVertices[v];
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', n1.x);
+      line.setAttribute('y1', n1.y);
+      line.setAttribute('x2', n2.x);
+      line.setAttribute('y2', n2.y);
+      line.setAttribute('stroke', 'black');
+      line.setAttribute('stroke-width', '2');
+      svg.appendChild(line);
+    });
+
+    // Vykreslit vrcholy
+    initialVertices.forEach(node => {
+      const circle = document.createElementNS(svgNS, 'circle');
+      circle.setAttribute('cx', node.x);
+      circle.setAttribute('cy', node.y);
+      circle.setAttribute('r', 11);
+      circle.setAttribute('fill', 'white');
+      circle.setAttribute('stroke', 'black');
+      circle.setAttribute('stroke-width', '2');
+      circle.style.cursor = 'pointer';
+
+      circle.addEventListener('click', () => {
+        if (mode === 'blue') {
+          if (selectedNode === null) {
+            selectedNode = node.id;
+            circle.setAttribute('fill', 'lightblue');
+          } else {
+            if (selectedNode !== node.id) {
+              const existsInBase = baseEdges.some(([a,b]) => (a===selectedNode && b===node.id) || (a===node.id && b===selectedNode));
+              const existsInBlue = blueEdges.findIndex(e => (e.from === selectedNode && e.to === node.id) || (e.from === node.id && e.to === selectedNode));
+              if (!existsInBase) {
+                if (existsInBlue >= 0) {
+                  blueEdges.splice(existsInBlue, 1);
+                } else {
+                  // Omezení, že lze přidat pouze 1 modrou čáru
+                  if (blueEdges.length < 1) { 
+                      blueEdges.push({from:selectedNode, to:node.id});
+                  }
+                }
+                drawBlueEdges();
+              }
+            }
+            resetVertexColors();
+            selectedNode = null;
+          }
+        }
+
+        if (mode === 'yellow') {
+          if (lastYellowNode === null) {
+            lastYellowNode = node.id;
+            circle.setAttribute('fill', '#FFFACD'); // světle žlutá
+          } else {
+            if (lastYellowNode !== node.id) {
+              const existsInYellow = yellowEdges.findIndex(e => (e.from === lastYellowNode && e.to === node.id) || (e.from === node.id && e.to === lastYellowNode));
+              // Logika ověření, že hrana existuje (buď černá nebo modrá)
+              const edgesToCheck = [...baseEdges, ...blueEdges.map(e => [e.from, e.to])];
+              const edgeExists = edgesToCheck.some(([u,v]) => (u === lastYellowNode && v === node.id) || (v === lastYellowNode && u === node.id));
+
+              if (edgeExists && existsInYellow < 0) {
+                yellowEdges.push({from:lastYellowNode, to:node.id});
+                yellowEdgesOrder.push([lastYellowNode,node.id]);
+                drawYellowEdges();
+              } else if (existsInYellow >= 0) {
+                // Možná byste chtěl umožnit smazání posledního tahu, ale zjednodušíme to
+                // Zde se jen přeskočí, pokud již existuje
+              }
+              
+              resetVertexColors();
+              const newCircle = svg.querySelectorAll('circle')[node.id];
+              newCircle.setAttribute('fill', '#FFFACD');
+              lastYellowNode = node.id;
+            }
+          }
+        }
+      });
+
+      svg.appendChild(circle);
+    });
+
+    function resetVertexColors() {
+      const circles = svg.querySelectorAll('circle');
+      circles.forEach(c => c.setAttribute('fill','white'));
+    }
+
+    function drawBlueEdges() {
+      // ... (funkce drawBlueEdges zůstává stejná) ...
+      svg.querySelectorAll('.blue-edge').forEach(el => el.remove());
+      blueEdges.forEach(edge => {
+        const n1 = initialVertices[edge.from];
+        const n2 = initialVertices[edge.to];
+        const r = 11; // poloměr vrcholu
+        const dx = n2.x - n1.x;
+        const dy = n2.y - n1.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        const startX = n1.x + (dx / d) * r;
+        const startY = n1.y + (dy / d) * r;
+        const endX = n2.x - (dx / d) * r;
+        const endY = n2.y - (dy / d) * r;
+
+        const line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', startX);
+        line.setAttribute('y1', startY);
+        line.setAttribute('x2', endX);
+        line.setAttribute('y2', endY);
+        line.setAttribute('stroke', '#4C8CFF');
+        line.setAttribute('stroke-width', '3');
+        line.classList.add('blue-edge');
+        svg.appendChild(line);
+      });
+    }
+
+    function drawYellowEdges() {
+      // ... (funkce drawYellowEdges zůstává stejná) ...
+      svg.querySelectorAll('.yellow-edge').forEach(el => el.remove());
+      yellowEdges.forEach(edge => {
+        const n1 = initialVertices[edge.from];
+        const n2 = initialVertices[edge.to];
+        const line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', n1.x);
+        line.setAttribute('y1', n1.y);
+        line.setAttribute('x2', n2.x);
+        line.setAttribute('y2', n2.y);
+        line.setAttribute('stroke', '#FFD700');
+        line.setAttribute('stroke-width', '4');
+        line.setAttribute('stroke-opacity', '0.6'); 
+        line.classList.add('yellow-edge');
+        svg.appendChild(line);
+      });
+    }
+
+    // Přepínání režimů
+    const btnBlue = document.getElementById('mode-blue');
+    const btnYellow = document.getElementById('mode-yellow');
+
+    btnBlue.addEventListener('click', () => {
+      mode = 'blue';
+      btnBlue.classList.add('active-mode');
+      btnYellow.classList.remove('active-mode');
+
+      yellowEdges = [];
+      yellowEdgesOrder = [];
+      drawYellowEdges();
+      lastYellowNode = null;
+      resetVertexColors();
+    });
+
+    btnYellow.addEventListener('click', () => {
+      mode = 'yellow';
+      btnYellow.classList.add('active-mode');
+      btnBlue.classList.remove('active-mode');
+
+      lastYellowNode = null;
+      resetVertexColors();
+    });
+
+    // Původní kód pro uložení dat BYL ZDE ODSTRANĚN a nahrazen voláním funkce addLikertSection!
+
+    // =====================================================================
+    // <<< PŘIDÁNÍ LIKERTOVY SEKCE A LOGIKY ULOŽENÍ DAT >>>
+    // =====================================================================
+    addLikertSection('euler-task-container', 'continue-btn-euler', (likertAnswers) => {
+        // Uložíme data úkolu (přidané čáry, tah) + data z dotazníku
+        jsPsych.data.addDataToLastTrial({
+            added_edges: blueEdges,
+            yellow_path: yellowEdgesOrder,
+            ...likertAnswers // Zde se automaticky přidají 3 Likertovy odpovědi
+        });
+        jsPsych.finishTrial(); // Tímto se přejde na další úkol
+    });
+  }
+};
+
+/////////////////////////////////////////////////////////////////// 5. úloha
+const hamiltonTask = {
+  type: jsPsychHtmlButtonResponse,
+  choices: [], // Změna: Odebráno defaultní tlačítko
+  stimulus: () => {
+    return `
+      <div id="hamilton-task-container"> <div class="prompt">
+          <p><strong>5. úloha:</strong> Najdi cestu mapou jedním tahem tak, aby každé město (bod) prošla právě jednou.</p>
+        </div>
+        <div style="margin-bottom:10px; display:flex; justify-content:center;">
+          <button type="button" id="reset-path">Vymazat trasu</button>
+        </div>
+        <svg id="hamilton-graph" viewBox="0 0 480 360" preserveAspectRatio="xMidYMid meet" style="border:1px solid #ccc; display:block; margin:auto;"></svg>
+        <span class="note">Klikněte na dva body, aby se mezi nimi vytvořila cesta.</span>
+        
+        </div>
+    `;
+  },
+  on_load: () => {
+    const svg = document.getElementById('hamilton-graph');
+    const svgNS = "http://www.w3.org/2000/svg";
+
+    const initialVertices = [
+      { id: 0, x: 240, y: 60 }, 
+      { id: 1, x: 120, y: 120 }, 
+      { id: 2, x: 360, y: 120 },
+      { id: 3, x: 80, y: 180 },
+      { id: 4, x: 160, y: 180 }, 
+      { id: 5, x: 240, y: 180 }, 
+      { id: 6, x: 320, y: 180 },
+      { id: 7, x: 400, y: 180 },
+      { id: 8, x: 120, y: 240 },
+      { id: 9, x: 360, y: 240 },
+      { id: 10, x: 240, y: 300 }
+    ];
+
+    const edges = [
+      [0,2], [0,4], [0,5],
+      [1,2], [1,3], [1,4],
+      [2,5], [2,9],
+      [3,4], [3,8],
+      [4,10],
+      [5,8], [5,9],
+      [6,7], [6,10],
+      [7,9],
+      [8,9], [8,10]
+    ];
+
+    let yellowEdges = [];
+    let yellowEdgesOrder = [];
+    let lastNode = null;
+
+    // vykreslíme černé hrany
+    edges.forEach(([u,v]) => {
+      const n1 = initialVertices[u];
+      const n2 = initialVertices[v];
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', n1.x);
+      line.setAttribute('y1', n1.y);
+      line.setAttribute('x2', n2.x);
+      line.setAttribute('y2', n2.y);
+      line.setAttribute('stroke', 'black');
+      line.setAttribute('stroke-width', '2');
+      svg.appendChild(line);
+    });
+
+    // vykreslíme vrcholy
+    initialVertices.forEach(node => {
+      const circle = document.createElementNS(svgNS, 'circle');
+      circle.setAttribute('cx', node.x);
+      circle.setAttribute('cy', node.y);
+      circle.setAttribute('r', 9); 
+      circle.setAttribute('fill', 'white');
+      circle.setAttribute('stroke', 'black');
+      circle.setAttribute('stroke-width', '2');
+      circle.style.cursor = 'pointer';
+
+      circle.addEventListener('click', () => {
+        if (lastNode === null) {
+          lastNode = node.id;
+          circle.setAttribute('fill', '#FFFACD'); // světle žlutá
+        } else {
+          if (lastNode !== node.id) {
+            const exists = yellowEdges.findIndex(e =>
+              (e.from === lastNode && e.to === node.id) ||
+              (e.from === node.id && e.to === lastNode)
+            );
+            const existsInBase = edges.some(([a,b]) =>
+              (a === lastNode && b === node.id) ||
+              (a === node.id && b === lastNode)
+            );
+            if (exists < 0 && existsInBase) {
+              yellowEdges.push({from:lastNode, to:node.id});
+              yellowEdgesOrder.push([lastNode, node.id]);
+              drawYellowEdges();
+            }
+            resetVertexColors();
+            const newCircle = svg.querySelectorAll('circle')[node.id];
+            newCircle.setAttribute('fill', '#FFFACD');
+            lastNode = node.id;
+          }
+        }
+      });
+
+      svg.appendChild(circle);
+    });
+
+    function resetVertexColors() {
+      const circles = svg.querySelectorAll('circle');
+      circles.forEach(c => c.setAttribute('fill','white'));
+    }
+
+    function drawYellowEdges() {
+      svg.querySelectorAll('.yellow-edge').forEach(el => el.remove());
+      yellowEdges.forEach(edge => {
+        const n1 = initialVertices[edge.from];
+        const n2 = initialVertices[edge.to];
+        const line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', n1.x);
+        line.setAttribute('y1', n1.y);
+        line.setAttribute('x2', n2.x);
+        line.setAttribute('y2', n2.y);
+        line.setAttribute('stroke', '#FFD700');
+        line.setAttribute('stroke-width', '4');
+        line.setAttribute('stroke-opacity', '0.6'); // průhlednost
+        line.classList.add('yellow-edge');
+        svg.appendChild(line);
+      });
+    }
+
+    // Vymazat trasu
+    document.getElementById('reset-path').addEventListener('click', () => {
+      yellowEdges = [];
+      yellowEdgesOrder = [];
+      svg.querySelectorAll('.yellow-edge').forEach(el => el.remove());
+      resetVertexColors();
+      lastNode = null;
+    });
+
+    // Původní kód pro uložení dat BYL ZDE ODSTRANĚN:
+    /*
+    document.querySelector('#continue-btn .jspsych-btn').addEventListener('click', () => {
+      jsPsych.data.addDataToLastTrial({
+        yellow_path: yellowEdgesOrder
+      });   
+      jsPsych.finishTrial();
+    });
+    */
+    
+    // =====================================================================
+    // <<< PŘIDÁNÍ LIKERTOVY SEKCE A LOGIKY ULOŽENÍ DAT >>>
+    // =====================================================================
+    addLikertSection('hamilton-task-container', 'continue-btn-hamilton', (likertAnswers) => {
+        // Uložíme data úkolu (žlutá trasa) + data z dotazníku
+        jsPsych.data.addDataToLastTrial({
+            yellow_path: yellowEdgesOrder,
+            ...likertAnswers // Zde se automaticky přidají 3 Likertovy odpovědi
+        });
+        jsPsych.finishTrial(); // Tímto se přejde na další úkol
+    });
+  }
+};
+
+/////////////////////////////////////////////////// 6. úloha
+const orientedTask = {
+  type: jsPsychHtmlButtonResponse,
+  choices: [], // tlačítka přidáme manuálně
+  stimulus: () => {
+    return `
+      <div id="oriented-task-container"> <div class="prompt">
+          <p><strong>6. úloha:</strong> Kolika způsoby je možné dostat se z bodu A do bodu B tak, aby se žádná šipka neopakovala dvakrát?</p>
+        </div>
+        <div style="margin-bottom:10px; display:flex; justify-content:center;">
+          <button type="button" id="reset-path">Vymazat trasu</button>
+        </div>
+        <svg id="oriented-graph" viewBox="0 0 480 360" preserveAspectRatio="xMidYMid meet" style="border:1px solid #ccc; display:block; margin:auto;"></svg>
+        <div id="answers" style="margin-top:20px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center; max-width:400px; margin-left:auto; margin-right:auto;">
+          ${Array.from({length: 20}, (_, i) => `<button class="answer-btn" data-value="${i+1}" style="flex:1 0 18%; padding:8px;">${i+1}</button>`).join('')}
+        </div>
+        </div>
+    `;
+  },
+  on_load: () => {
+    const svg = document.getElementById('oriented-graph');
+    const svgNS = "http://www.w3.org/2000/svg";
+
+    const initialVertices = [
+      { id: 0, x: 180, y: 320, label: 'A' }, 
+      { id: 1, x: 300, y: 320, label: 'B' },
+      { id: 2, x: 180, y: 240, label: '' },
+      { id: 3, x: 300, y: 240, label: '' }, 
+      { id: 4, x: 180, y: 120, label: '' },
+      { id: 5, x: 300, y: 120, label: '' },
+      { id: 6, x: 180, y: 40, label: '' }, 
+      { id: 7, x: 300, y: 40, label: '' }
+    ];
+
+    const edges = [
+      [0,3], [1,0],
+      [2,1], [2,4], [3,4], [3,5],
+      [4,7], [5,2],
+      [6,5], [7,6]
+    ];
+
+    let yellowEdges = [];
+    let yellowEdgesOrder = [];
+    let lastNode = null;
+    let selectedAnswer = null; // Deklarace proměnné pro odpověď
+
+    // Přidáme definici šipky pro orientované hrany
+    const defs = document.createElementNS(svgNS, 'defs');
+    defs.innerHTML = `
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="black" />
+      </marker>
+      <marker id="yellow-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#FFD700" fill-opacity="0.6" />
+      </marker>
+    `;
+    svg.appendChild(defs);
+
+    // Vykreslíme černé orientované hrany
+    edges.forEach(([u,v]) => {
+     const n1 = initialVertices[u];
+     const n2 = initialVertices[v];
+     const dx = n2.x - n1.x;
+     const dy = n2.y - n1.y;
+     const len = Math.sqrt(dx*dx + dy*dy);
+     const ux = dx / len;
+     const uy = dy / len;
+     const r = 13; // poloměr vrcholu
+
+     const line = document.createElementNS(svgNS, 'line');
+     line.setAttribute('x1', n1.x + ux * r);
+     line.setAttribute('y1', n1.y + uy * r);
+     line.setAttribute('x2', n2.x - ux * r);
+     line.setAttribute('y2', n2.y - uy * r);
+     line.setAttribute('stroke', 'black');
+     line.setAttribute('stroke-width', '2');
+     line.setAttribute('marker-end', 'url(#arrow)');
+     svg.appendChild(line);
+    });
+
+    // Definice resetu barev (používá se uvnitř listeneru, musí být definována zde)
+    function resetVertexColors() {
+      const circles = svg.querySelectorAll('circle');
+      circles.forEach(c => c.setAttribute('fill','white'));
+    }
+
+    // Vykreslíme vrcholy + text
+    initialVertices.forEach(node => {
+      const circle = document.createElementNS(svgNS, 'circle');
+      circle.setAttribute('cx', node.x);
+      circle.setAttribute('cy', node.y);
+      circle.setAttribute('r', 13);
+      circle.setAttribute('fill', 'white');
+      circle.setAttribute('stroke', 'black');
+      circle.setAttribute('stroke-width', '2');
+      circle.style.cursor = 'pointer';
+
+      circle.addEventListener('click', () => {
+        // Kliknutí na vrchol - logika žlutých hran
+        if (lastNode === null) {
+          lastNode = node.id;
+          circle.setAttribute('fill', '#FFFACD'); // světle žlutá
+        } else {
+          if (lastNode !== node.id) {
+            // Kontrola: hrana musí být ve směru (lastNode → node.id)
+            const existsInBase = edges.some(([a,b]) => a === lastNode && b === node.id);
+            if (existsInBase) {
+              // Kontrola: Hrana nesmí být použita dvakrát
+              const edgeKey = `${lastNode}-${node.id}`;
+              const isUsed = yellowEdgesOrder.some(([u,v]) => u === lastNode && v === node.id);
+
+              if (!isUsed) {
+                yellowEdges.push({from:lastNode, to:node.id});
+                yellowEdgesOrder.push([lastNode, node.id]);
+                drawYellowEdges();
+              }
+              
+              resetVertexColors();
+              const newCircle = svg.querySelectorAll('circle')[node.id];
+              newCircle.setAttribute('fill', '#FFFACD');
+              lastNode = node.id;
+            }
+          }
+        }
+      });
+
+      svg.appendChild(circle);
+
+      // Text ve vrcholu
+      if (node.label) {
+        const text = document.createElementNS(svgNS, 'text');
+        text.setAttribute('x', node.x);
+        text.setAttribute('y', node.y + 4);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '16px');
+        text.textContent = node.label;
+        svg.appendChild(text);
+      }
+    });
+
+
+    function drawYellowEdges() {
+      svg.querySelectorAll('.yellow-edge').forEach(el => el.remove());
+      yellowEdges.forEach(edge => {
+        const n1 = initialVertices[edge.from];
+        const n2 = initialVertices[edge.to];
+        const dx = n2.x - n1.x;
+        const dy = n2.y - n1.y;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        const ux = dx / len;
+        const uy = dy / len;
+        const r = 13; // poloměr vrcholu
+
+        const line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', n1.x + ux * r);
+        line.setAttribute('y1', n1.y + uy * r);
+        line.setAttribute('x2', n2.x - ux * r);
+        line.setAttribute('y2', n2.y - uy * r);
+        line.setAttribute('stroke', '#FFD700');
+        line.setAttribute('stroke-width', '4');
+        line.setAttribute('stroke-opacity', '0.6');
+        line.setAttribute('marker-end', 'url(#yellow-arrow)'); // Žlutá šipka
+        line.classList.add('yellow-edge');
+        svg.appendChild(line);
+      });
+    }
+
+    // Reset trasy
+    document.getElementById('reset-path').addEventListener('click', () => {
+      yellowEdges = [];
+      yellowEdgesOrder = [];
+      svg.querySelectorAll('.yellow-edge').forEach(el => el.remove());
+      resetVertexColors();
+      lastNode = null;
+    });
+
+    // Výběr odpovědi
+    document.querySelectorAll('.answer-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.answer-btn').forEach(b => b.style.background = '');
+        btn.style.background = 'lightblue';
+        selectedAnswer = btn.dataset.value;
+        // PŮVODNÍ KÓD PRO ZOBRAZENÍ TLAČÍTKA ODEBRÁN!
+        resetVertexColors();
+      });
+    });
+
+    // Původní kód pro Uložení a pokračování byl odstraněn.
+    
+    // =====================================================================
+    // <<< PŘIDÁNÍ LIKERTOVY SEKCE A LOGIKY ULOŽENÍ DAT >>>
+    // =====================================================================
+    addLikertSection('oriented-task-container', 'continue-btn-oriented', (likertAnswers) => {
+      // Uložíme data úkolu (trasa, zvolená odpověď) + data z dotazníku
+      jsPsych.data.addDataToLastTrial({
+        yellow_path: yellowEdgesOrder,
+        answer: selectedAnswer,
+        ...likertAnswers // Zde se automaticky přidají 3 Likertovy odpovědi
+      });
+      jsPsych.finishTrial(); // Tímto se přejde na další úkol
+    });
+  }
+};
+
+// =========================================================================
+// PŘEPRACOVANÁ FUNKCE PRO ODESLÁNÍ DAT VE WIDE FORMÁTU
+// =========================================================================
+
+// GLOBÁLNÍ ČÍTAČ PRO IDENTIFIKACI RESPONDENTŮ (lze ho uložit i v LocalStorage)
+// Pro jednoduchost ho necháme jako časové razítko.
+let respondentCounter = 0; 
+
+function saveDataToSheetDB() {
+    // 1. Nastavení proměnných
+    const sheetDB_URL = 'o	https://sheetdb.io/api/v1/dknmz514rz0f5'; // ZMĚŇTE NA VAŠI URL!
+    const allData = jsPsych.data.get().values();
+    
+    // Generování ID (např. "ID_1667678400000" pro dnešní datum/čas)
+    const subjectID = 'ID_' + Date.now(); 
+    
+    // Jediný objekt pro finální uložení (jeden řádek v tabulce)
+    const finalData = {
+        respondent_id: subjectID,
+        time_total_ms: jsPsych.data.get().select('time_elapsed').values().at(-1) || 'N/A'
+    };
+
+    // Index pro pojmenování úkolů (task1, task2, ...)
+    let taskIndex = 1; 
+
+    // 2. Extrakce a formátování dat do WIDE FORMATU
+    allData.forEach(trial => {
+        // --- A. Demografické údaje ---
+        // Demografické údaje ukládáme jen jednou
+        if (trial.task_name === 'demography' && !finalData.study_field) {
+            finalData.study_field = trial.study_field;
+        }
+        if (trial.task_name === 'demography_year' && !finalData.study_year) {
+            finalData.study_year = trial.study_year;
+        }
+        
+        // --- B. Úkoly (Sledování pohybu, odpověď a Likertovy otázky) ---
+        // Předpokládáme, že úkoly mají unikátní data: yellow_path
+        if (trial.yellow_path) { 
+            const prefix = `task${taskIndex}_`;
+            
+            finalData[prefix + 'rt'] = trial.rt;
+            finalData[prefix + 'path'] = JSON.stringify(trial.yellow_path); // Sledovaná cesta
+            finalData[prefix + 'answer'] = trial.answer; // Konečná volba (slovní odpověď)
+            
+            // Likertovy otázky (zde se fixuje problém s chybějícími daty)
+            finalData[prefix + 'L_time'] = trial.likert_time || 'N/A'; 
+            finalData[prefix + 'L_diff'] = trial.likert_difficulty || 'N/A';
+            finalData[prefix + 'L_cert'] = trial.likert_certainty || 'N/A';
+
+            taskIndex++;
+        }
+        
+        // --- C. Finální slovní odpověď (Slovní reflexe) ---
+        // Váš kód možná obsahuje trial, kde je uložena delší slovní odpověď.
+        // Předpokládejme, že je uložena pod klíčem 'text_response' a 'task_name: "final_reflection"'
+        if (trial.task_name === 'final_reflection' && trial.text_response) {
+            finalData.final_reflection = trial.text_response;
+        }
+    });
+
+    // 3. Odeslání jediného řádku dat do SheetDB
+    const dataToSend = {
+        data: [finalData] // Odesíláme pole obsahující JEDEN objekt
+    };
+    
+    // ... (zbytek fetch kódu pro odeslání dat, kde se zobrazuje poděkování) ...
+
+    fetch(sheetDB_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend)
+    })
+    .then(response => {
+        // Kontrola, zda odeslání proběhlo úspěšně
+        if (response.ok) {
+            document.querySelector('.jspsych-content').innerHTML = `
+                <div style="text-align: center; max-width: 600px; margin: 40px auto;">
+                    <h2>Děkujeme za Váš čas!</h2>
+                    <p style="color: green; font-weight: bold;">✅ Data byla úspěšně uložena (ID: ${subjectID}).</p>
+                    <p>Můžete zavřít toto okno.</p>
+                </div>
+            `;
+            console.log('✅ Data byla úspěšně odeslána do Google Sheets (Wide Format).');
+        } else {
+            // ... (chybová hláška při selhání serveru/SheetDB) ...
+             document.querySelector('.jspsych-content').innerHTML = `
+                <div style="text-align: center; max-width: 600px; margin: 40px auto; color: red;">
+                    <h2>Děkujeme – Experiment dokončen, ale s chybou uložení!</h2>
+                    <p>Došlo k chybě při ukládání dat (Chyba serveru). ID: ${subjectID}. Prosím, kontaktujte experimentátora.</p>
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        // ... (chybová hláška při selhání sítě) ...
+         document.querySelector('.jspsych-content').innerHTML = `
+            <div style="text-align: center; max-width: 600px; margin: 40px auto; color: red;">
+                <h2>Děkujeme – Experiment dokončen, ale s chybou uložení!</h2>
+                <p>Došlo k chybě při ukládání dat (Chyba sítě). ID: ${subjectID}. Prosím, kontaktujte experimentátora.</p>
+            </div>
+        `;
+    });
+}
+
+
+    jsPsych.run([informed_consent, demography_study_field, demography_study_year, demography_study_form, houseTask, connectTask, coloringTask, eulerTask, hamiltonTask, orientedTask]).then(saveDataToSheetDB); //Timeline - pořadí úloh
+  </script>
+</body>
+</html>
+
+
+
+
